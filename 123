@@ -1,0 +1,791 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QCalendarWidget, QTextEdit, QLabel, QLineEdit, QListWidget, QComboBox, QDateTimeEdit, QMessageBox
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QDate, QTime, QDateTime
+
+class DailyPlanner(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('Daily Planner')
+        self.setWindowIcon(QIcon('icon.png'))
+        self.setGeometry(100, 100, 800, 600)
+
+        # Создание виджетов
+        self.calendar = QCalendarWidget(self)
+        self.calendar.setGridVisible(True)
+        self.calendar.clicked[QDate].connect(self.show_day_tasks)
+
+        self.task_list = QListWidget(self)
+        self.task_list.itemClicked.connect(self.show_task_details)
+        self.task_list.itemDoubleClicked.connect(self.edit_task)
+
+        self.add_task_button = QPushButton('Add Task', self)
+        self.add_task_button.clicked.connect(self.add_task)
+
+        self.edit_task_button = QPushButton('Edit Task', self)
+        self.edit_task_button.setEnabled(False)
+        self.edit_task_button.clicked.connect(self.edit_task)
+
+        self.delete_task_button = QPushButton('Delete Task', self)
+        self.delete_task_button.setEnabled(False)
+        self.delete_task_button.clicked.connect(self.delete_task)
+
+        self.task_details_box = QGroupBox('Task Details', self)
+        self.task_details_box.setEnabled(False)
+        self.task_details_form = QFormLayout(self.task_details_box)
+
+        self.task_name_label = QLabel('Task Name:', self)
+        self.task_group_combo_box.addItem('Default')
+        self.task_details_form.addRow(self.task_group_labeAl, self.task_group_combo_box)
+
+        self.task_group_label = QLabel('Task Group:', self)
+        self.task_group_combo_box = QComboBox(self)
+        self.task_group_combo_box.addItem('Default')
+        self.task_details_form.addRow(self.task_group_labeAl, self.task_group_combo_box)
+
+        self.task_datetime_label = QLabel('Task Date and Time:', self)
+        self.task_datetime_edit = QDateTimeEdit(self)
+        self.task_datetime_edit.setDisplayFormat('dd.MM.yyyy HH:mm')
+        self.task_datetime_edit.setMinimumDateTime(QDateTime.currentDateTime())
+        self.task_details_form.addRow(self.task_datetime_label, self.task_datetime_edit)
+
+        self.task_description_label = QLabel('Task Description:', self)
+        self.task_description_text_edit = QTextEdit(self)
+        self.task_details_form.addRow(self.task_description_label, self.task_description_text_edit)
+
+        self.save_task_button = QPushButton('Save Task', self)
+        self.save_task_button.setEnabled(False)
+        self.save_task_button.clicked.connect(self.save_task)
+
+        # Создание меню
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
+        add_group_action = file_menu.addAction('Add Group')
+        add_group_action.triggered.connect(self.add_group)
+        exit_action = file_menu.addAction('Exit')
+        exit_action.triggered.connect(self.close)
+
+        sort_menu = menu_bar.addMenu('Sort')
+        sort_by_name_action = sort_menu.addAction('By Name')
+        sort_by_name_action.triggered.connect(lambda: self.sort_tasks_by('name'))
+        sort_by_datetime_action = sort_menu.addAction('By Date and Time')
+        sort_by_datetime_action.triggered.connect(lambda: self.sort_tasks_by(''))
+        filter_menu = menu_bar.addMenu('Filter')
+        filter_by_group_action = filter_menu.addAction('By Group')
+        filter_by_group_action.triggered.connect(self.filter_by_group)
+        filter_by_datetime_action = filter_menu.addAction('By Date and Time')
+        filter_by_datetime_action.triggered.connect(self.filter_by_datetime)
+
+    # Создание layout'ов
+        grid_layout = QGridLayout()
+        grid_layout.addWidget(self.calendar, 0, 0, 1, 1)
+        grid_layout.addWidget(self.task_list, 0, 1, 1, 1)
+
+        hbox_layout = QHBoxLayout()
+        hbox_layout.addWidget(self.add_task_button)
+        hbox_layout.addWidget(self.edit_task_button)
+        hbox_layout.addWidget(self.delete_task_button)
+        hbox_layout.addStretch(1)
+
+        vbox_layout = QVBoxLayout()
+        vbox_layout.addWidget(self.task_details_box)
+        vbox_layout.addWidget(self.save_task_button)
+        vbox_layout.addStretch(1)
+
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(grid_layout)
+        main_layout.addLayout(hbox_layout)
+        main_layout.addLayout(vbox_layout)
+
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+        self.show()
+
+def add_group(self):
+    group_name, ok = QInputDialog.getText(self, 'Add Group', 'Enter the name of the new group:')
+    if ok and group_name:
+        self.task_group_combo_box.addItem(group_name)
+
+def add_task(self):
+    self.task_list.clearSelection()
+    self.task_details_box.setEnabled(True)
+    self.save_task_button.setEnabled(True)
+    self.task_name_line_edit.clear()
+    self.task_group_combo_box.setCurrentIndex(0)
+    self.task_datetime_edit.setDateTime(QDateTime.currentDateTime())
+    self.task_description_text_edit.clear()
+
+def edit_task(self):
+    current_item = self.task_list.currentItem()
+    if current_item:
+        self.task_details_box.setEnabled(True)
+        self.save_task_button.setEnabled(True)
+        task_name = current_item.text()
+        task_group = current_item.data(Qt.UserRole)
+        task_datetime = current_item.data(Qt.UserRole + 1)
+        task_description = current_item.data(Qt.UserRole + 2)
+        self.task_name_line_edit.setText(task_name)
+        index = self.task_group_combo_box.findText(task_group)
+        self.task_group_combo_box.setCurrentIndex(index)
+        self.task_datetime_edit.setDateTime(task_datetime)
+        self.task_description_text_edit.setText(task_description)
+
+def delete_task(self):
+    current_item = self.task_list.currentItem()
+    if current_item:
+        reply = QMessageBox.question(self, 'Delete Task', 'Are you sure you want to delete this task?', QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.task_list.takeItem(self.task_list.row(current_item))
+            self.task_details_box.setEnabled(False)
+            self.save_task_button.setEnabled(False)
+
+def save_task(self):
+    task_name = self.task_name_line_edit.text()
+    task_group = self.task_group_combo_box.currentText()
+    task_datetime = self.task_datetime_edit.dateTime()
+    task_description = self.task_description_text_edit.toPlainText()
+    if not task_name:
+        QMessageBox.warning(self, 'Error', 'Task name cannot be empty.')
+        return
+    if self.task_list.selectedItems():
+        # Редактирование существующей задачи
+        current_item = self.task_list.currentItem()
+        current_item.setText(task_name)
+        current_item.setData(Qt.UserRole, task_group)
+        current_item.setData(Qt.UserRole + 1, task_datetime)
+        current_item.setData(Qt.UserRole + 2, task_description)
+    else:
+        # Создание новой задачи
+        task_item = QListWidgetItem(task_name)
+        task_item.setData(Qt.UserRole, task_group)
+        task_item.setData(Qt.UserRole + 1, task_datetime)
+        task_item.setData(Qt.UserRole + 2, task_description)
+        self.task_list.addItem(task_item)
+def filter_tasks(self):
+    # Фильтрация задач по выбранной группе
+    current_group = self.task_group_filter_combo_box.currentText()
+    for i in range(self.task_list.count()):
+        item = self.task_list.item(i)
+        if current_group == 'All' or current_group == item.data(Qt.UserRole):
+            item.setHidden(False)
+        else:
+            item.setHidden(True)
+
+def sort_tasks(self):
+    # Сортировка задач по выбранному методу сортировки
+    current_sorting_method = self.task_sorting_combo_box.currentText()
+    if current_sorting_method == 'Name':
+        self.task_list.sortItems(Qt.AscendingOrder)
+    elif current_sorting_method == 'Group':
+        self.task_list.sortItems(Qt.AscendingOrder, key=lambda x: x.data(Qt.UserRole))
+    elif current_sorting_method == 'Date':
+        self.task_list.sortItems(Qt.AscendingOrder, key=lambda x: x.data(Qt.UserRole + 1))
+
+def show_daily_tasks(self):
+    self.task_list.clear()
+    selected_date = self.calendar.selectedDate()
+    for i in range(self.task_list_daily.count()):
+        item = self.task_list_daily.item(i)
+        if selected_date == item.data(Qt.UserRole + 1).date():
+            task_item = QListWidgetItem(item.text())
+            task_item.setData(Qt.UserRole, item.data(Qt.UserRole))
+            task_item.setData(Qt.UserRole + 1, item.data(Qt.UserRole + 1))
+            task_item.setData(Qt.UserRole + 2, item.data(Qt.UserRole + 2))
+            self.task_list.addItem(task_item)
+
+def show_weekly_tasks(self):
+    self.task_list.clear()
+    selected_date = self.calendar.selectedDate()
+    start_of_week = selected_date.addDays(-selected_date.dayOfWeek() + 1)
+    end_of_week = start_of_week.addDays(6)
+    for i in range(self.task_list_weekly.count()):
+        item = self.task_list_weekly.item(i)
+        task_datetime = item.data(Qt.UserRole + 1)
+        if start_of_week <= task_datetime.date() <= end_of_week:
+            task_item = QListWidgetItem(item.text())
+            task_item.setData(Qt.UserRole, item.data(Qt.UserRole))
+            task_item.setData(Qt.UserRole + 1, item.data(Qt.UserRole + 1))
+            task_item.setData(Qt.UserRole + 2, item.data(Qt.UserRole + 2))
+            self.task_list.addItem(task_item)
+
+def show_monthly_tasks(self):
+    self.task_list.clear()
+    selected_date = self.calendar.selectedDate()
+    start_of_month = QDate(selected_date.year(), selected_date.month(), 1)
+    end_of_month = start_of_month.addMonths(1).addDays(-1)
+    for i in range(self.task_list_monthly.count()):
+        item = self.task_list_monthly.item(i)
+        task_datetime = item.data(Qt.UserRole + 1)
+        if start_of_month <= task_datetime.date() <= end_of_month:
+            task_item = QListWidgetItem(item.text())
+            task_item.setData(Qt.UserRole, item.data(Qt.UserRole))
+            task_item.setData(Qt.UserRole + 1, item.data(Qt.UserRole + 1))
+            task_item.setData(Qt.UserRole + 2, item.data(Qt.UserRole + 2))
+            self.task_list.addItem(task_item)
+def create_task_group_combo_box(self):
+    self.task_group_combo_box = QComboBox()
+    self.task_group_combo_box.addItem('No Group')
+    for group_name in self.task_groups:
+        self.task_group_combo_box.addItem(group_name)
+def create_task_group_filter_combo_box(self):
+    self.task_group_filter_combo_box = QComboBox()
+    self.task_group_filter_combo_box.addItem('All')
+    for group_name in self.task_groups:
+        self.task_group_filter_combo_box.addItem(group_name)
+    self.task_group_filter_combo_box.currentIndexChanged.connect(self.filter_tasks)
+def create_task_sorting_combo_box(self):
+    self.task_sorting_combo_box = QComboBox()
+    self.task_sorting_combo_box.addItem('Name')
+    self.task_sorting_combo_box.addItem('Group')
+    self.task_sorting_combo_box.addItem('Date')
+    self.task_sorting_combo_box.currentIndexChanged.connect(self.sort_tasks)
+
+def create_task_list_widget(self):
+    self.task_list = QListWidget()
+    self.task_list.itemDoubleClicked.connect(self.edit_task)
+    self.task_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
+def create_task_widget(self):
+    self.task_widget = QWidget()
+    task_layout = QVBoxLayout()
+    self.create_task_group_combo_box()
+    self.create_task_group_filter_combo_box()
+    self.create_task_sorting_combo_box()
+    self.create_task_list_widget()
+    task_layout.addWidget(QLabel('Task List'))
+    task_layout.addWidget(self.task_group_combo_box)
+    task_layout.addWidget(self.task_group_filter_combo_box)
+    task_layout.addWidget(self.task_sorting_combo_box)
+    task_layout.addWidget(self.task_list)
+    self.task_widget.setLayout(task_layout)
+
+def create_group_widget(self):
+    self.group_widget = QWidget()
+    group_layout = QVBoxLayout()
+    self.create_group_list_widget()
+    self.create_group_add_button()
+    self.create_group_remove_button()
+    group_layout.addWidget(QLabel('Groups'))
+    group_layout.addWidget(self.group_list)
+    group_layout.addWidget(self.group_add_button)
+    group_layout.addWidget(self.group_remove_button)
+    self.group_widget.setLayout(group_layout)
+
+def create_main_window(self):
+    self.main_window = QMainWindow()
+    self.main_window.setWindowTitle('Daily Planner')
+    self.main_window.setGeometry(100, 100, 800, 600)
+    self.create_menu()
+    self.create_calendar_widget()
+    self.create_task_widget()
+    self.create_group_widget()
+    main_layout = QHBoxLayout()
+    main_layout.addWidget(self.calendar_widget)
+    main_layout.addWidget(self.task_widget)
+    main_layout.addWidget(self.group_widget)
+    central_widget = QWidget()
+    central_widget.setLayout(main_layout)
+    self.main_window.setCentralWidget(central_widget)
+
+def show(self):
+    self.main_window.show()
+    sys.exit(self.app.exec_())
+if __name__ == '__main__':
+    planner = DailyPlanner()
+planner.show()
+#Методы для работы с записями
+def add_task(self):
+    task_dialog = TaskDialog(self.task_groups)
+    if task_dialog.exec_():
+        task = task_dialog.get_task()
+        self.tasks.append(task)
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task added successfully')
+
+def edit_task(self, item):
+    index = self.task_list.row(item)
+    task = self.tasks[index]
+    task_dialog = TaskDialog(self.task_groups, task)
+    if task_dialog.exec_():
+        task = task_dialog.get_task()
+        self.tasks[index] = task
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task updated successfully')
+
+def remove_task(self):
+    items = self.task_list.selectedItems()
+    if not items:
+        return
+    message_box = QMessageBox()
+    message_box.setText('Are you sure you want to remove the selected tasks?')
+    message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    message_box.setDefaultButton(QMessageBox.No)
+    if message_box.exec_() == QMessageBox.Yes:
+        for item in items:
+            index = self.task_list.row(item)
+            del self.tasks[index]
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task(s) removed successfully')
+
+def filter_tasks(self):
+    group = self.task_group_filter_combo_box.currentText()
+    if group == 'All':
+        self.filtered_tasks = self.tasks
+    else:
+        self.filtered_tasks = [task for task in self.tasks if task.group == group]
+    self.sort_tasks()
+
+def sort_tasks(self):
+    sort_type = self.task_sorting_combo_box.currentText().lower()
+    if sort_type == 'name':
+        self.filtered_tasks.sort(key=lambda task: task.name)
+    elif sort_type == 'group':
+        self.filtered_tasks.sort(key=lambda task: task.group)
+    elif sort_type == 'date':
+        self.filtered_tasks.sort(key=lambda task: task.date)
+    self.update_task_list()
+
+def update_task_list(self):
+    self.task_list.clear()
+    for task in self.filtered_tasks:
+        item = QListWidgetItem(task.name)
+        self.task_list.addItem(item)
+
+# Методы для работы с группами
+def add_group(self):
+    group_name, ok = QInputDialog.getText(self.main_window, 'Add Group', 'Enter the group name:')
+    if ok and group_name:
+        self.task_groups.append(group_name)
+        self.save_task_groups()
+        self.update_group_list()
+        self.show_message('Group added successfully')
+
+def remove_group(self):
+    index = self.group_list.currentRow()
+    if index < 0:
+        return
+    group_name = self.task_groups[index]
+    message_box = QMessageBox()
+    message_box.setText(f'Are you sure you want to remove the "{group_name}" group?')
+    message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    message_box.setDefaultButton(QMessageBox.No)
+    if message_box.exec_() == QMessageBox.Yes:
+        del self.task_groups[index]
+        self.save_task_groups()
+        self.update_group_list()
+        self.show_message('Group removed successfully')
+
+def update_group_list(self):
+    self.group_list.clear()
+    for group_name in self.task_groups:
+        item = QListWidgetItem(group_name)
+        self.group_list.addItem(item)
+
+# Методы для работы с календарем
+def update_calendar(self):
+    date = self.calendar_widget.selectedDate().toPyDate()
+    tasks = [task for task in self.tasks if task.date == date]
+    self.calendar_widget.set_tasks(tasks)
+
+# Методы для сохранения и загрузки данных
+def save_tasks(self):
+    with None:
+        pass
+def add_task(self):
+    task_dialog = TaskDialog(self.task_groups)
+    if task_dialog.exec_():
+        task = task_dialog.get_task()
+        self.tasks.append(task)
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task added successfully')
+
+def edit_task(self, item):
+    index = self.task_list.row(item)
+    task = self.tasks[index]
+    task_dialog = TaskDialog(self.task_groups, task)
+    if task_dialog.exec_():
+        task = task_dialog.get_task()
+        self.tasks[index] = task
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task updated successfully')
+
+def remove_task(self):
+    items = self.task_list.selectedItems()
+    if not items:
+        return
+    message_box = QMessageBox()
+    message_box.setText('Are you sure you want to remove the selected tasks?')
+    message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    message_box.setDefaultButton(QMessageBox.No)
+    if message_box.exec_() == QMessageBox.Yes:
+        for item in items:
+            index = self.task_list.row(item)
+            del self.tasks[index]
+        self.save_tasks()
+        self.update_task_list()
+        self.show_message('Task(s) removed successfully')
+
+def filter_tasks(self):
+    group = self.task_group_filter_combo_box.currentText()
+    if group == 'All':
+        self.filtered_tasks = self.tasks
+    else:
+        self.filtered_tasks = [task for task in self.tasks if task.group == group]
+    self.sort_tasks()
+
+def sort_tasks(self):
+    sort_type = self.task_sorting_combo_box.currentText().lower()
+    if sort_type == 'name':
+        self.filtered_tasks.sort(key=lambda task: task.name)
+    elif sort_type == 'group':
+        self.filtered_tasks.sort(key=lambda task: task.group)
+    elif sort_type == 'date':
+        self.filtered_tasks.sort(key=lambda task: task.date)
+    self.update_task_list()
+
+def update_task_list(self):
+    self.task_list.clear()
+    for task in self.filtered_tasks:
+        item = QListWidgetItem(task.name)
+        self.task_list.addItem(item)
+
+# Методы для работы с группами
+def add_group(self):
+    group_name, ok = QInputDialog.getText(self.main_window, 'Add Group', 'Enter the group name:')
+    if ok and group_name:
+        self.task_groups.append(group_name)
+        self.save_task_groups()
+        self.update_group_list()
+        self.show_message('Group added successfully')
+
+def remove_group(self):
+    index = self.group_list.currentRow()
+    if index < 0:
+        return
+    group_name = self.task_groups[index]
+    message_box = QMessageBox()
+    message_box.setText(f'Are you sure you want to remove the "{group_name}" group?')
+    message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    message_box.setDefaultButton(QMessageBox.No)
+    if message_box.exec_() == QMessageBox.Yes:
+        del self.task_groups[index]
+        self.save_task_groups()
+        self.update_group_list()
+        self.show_message('Group removed successfully')
+
+def update_group_list(self):
+    self.group_list.clear()
+    for group_name in self.task_groups:
+        item = QListWidgetItem(group_name)
+        self.group_list.addItem(item)
+
+# Методы для работы с календарем
+def update_calendar(self):
+    date = self.calendar_widget.selectedDate().toPyDate()
+    tasks = [task for task in self.tasks if task.date == date]
+    self.calendar_widget.set_tasks(tasks)
+
+# Методы для сохранения и загрузки данных
+def save_tasks(self):
+    with open(self.tasks_file_path, 'w') as f:
+        tasks_data = []
+        for task in self.tasks:
+            tasks_data.append(task.to_dict())
+        json.dump(tasks_data, f)
+def load_tasks(self):
+    if os.path.isfile(self.tasks_file_path):
+        with open(self.tasks_file_path, 'r') as f:
+            tasks_data = json.load(f)
+            self.tasks = []
+            for task_data in tasks_data:
+                task = Task.from_dict(task_data)
+                self.tasks.append(task)
+    else:
+        self.tasks = []
+
+def save_task_groups(self):
+    with open(self.task_groups_file_path, 'w') as f:
+        json.dump(self.task_groups, f)
+
+def load_task_groups(self):
+    if os.path.isfile(self.task_groups_file_path):
+        with open(self.task_groups_file_path, 'r') as f:
+            self.task_groups = json.load(f)
+    else:
+        self.task_groups = ['Default']
+
+# Метод для отображения сообщений
+def show_message(self, message):
+    message_box = QMessageBox()
+    message_box.setText(message)
+    message_box.exec_()
+# Запускаем приложение
+if name == 'main':
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+    
+class Task:
+    def __init__(self, title, description, date, group=None, reminder=None):
+        self.title = title
+        self.description = description
+        self.date = date
+        self.group = group
+        self.reminder = reminder
+        
+    def to_dict(self):
+        task_dict = {'title': self.title, 'description': self.description, 'date': self.date, 'group': self.group,
+                     'reminder': self.reminder}
+        return task_dict
+
+    @staticmethod
+    def from_dict(task_dict):
+        return Task(title=task_dict['title'], description=task_dict['description'], date=task_dict['date'],
+                    group=task_dict['group'], reminder=task_dict['reminder'])
+        
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+    # Инициализация основных переменных
+    self.tasks = []
+    self.task_groups = []
+    self.current_task = None
+
+    # Загрузка данных
+    self.tasks_file_path = 'tasks.json'
+    self.task_groups_file_path = 'task_groups.json'
+    self.load_tasks()
+    self.load_task_groups()
+
+    # Создание интерфейса
+    self.init_ui()
+
+def init_ui(self):
+    # Создание главного виджета и установка его на главное окно
+    self.main_widget = QWidget()
+    self.setCentralWidget(self.main_widget)
+
+    # Создание виджетов для работы с задачами
+    self.task_list = QListWidget()
+    self.task_list.setMinimumWidth(200)
+    self.task_list.setMaximumWidth(300)
+    self.task_list.setSelectionMode(QAbstractItemView.SingleSelection)
+    self.task_list.itemSelectionChanged.connect(self.task_selection_changed)
+
+    self.task_title = QLineEdit()
+    self.task_description = QTextEdit()
+    self.task_group = QComboBox()
+    self.task_group.addItems(self.task_groups)
+    self.task_date = QDateEdit()
+    self.task_date.setDisplayFormat('yyyy-MM-dd')
+    self.task_reminder = QCheckBox('Установить напоминание')
+    self.task_reminder.stateChanged.connect(self.reminder_checkbox_changed)
+
+    self.task_save_button = QPushButton('Сохранить')
+    self.task_save_button.clicked.connect(self.save_task)
+    self.task_delete_button = QPushButton('Удалить')
+    self.task_delete_button.clicked.connect(self.delete_task)
+
+    # Создание виджетов для работы с календарем
+    self.calendar = QCalendarWidget()
+    self.calendar.setMinimumDate(QDate.currentDate())
+    self.calendar.setGridVisible(True)
+    self.calendar.clicked.connect(self.calendar_date_changed)
+
+    # Создание виджетов для работы со списком задач на день/неделю/месяц
+    self.task_filter = QComboBox()
+    self.task_filter.addItems(['День', 'Неделя', 'Месяц'])
+    self.task_filter.currentTextChanged.connect(self.task_filter_changed)
+
+    self.task_list_by_date = QListWidget()
+    self.task_list_by_date.itemSelectionChanged.connect(self.task_list_by_date_selection_changed)
+
+    # Создание виджетов для работы с группами задач
+    self.group_list = QListWidget()
+    self.group_list.itemSelectionChanged.connect(self.group_list_selection_changed)
+
+    self.group_add_button = QPushButton('Добавить группу')
+    self.group_add_button.clicked.connect(self.add_group)
+    self.group_delete_button = QPushButton('Удалить группу')
+    self.group_delete_button.clicked.connect(self.delete_group)
+
+    # Размещение виджетов на главном окне
+    main_layout = QHBoxLayout()
+    main_layout.addWidget(self.task_list)
+
+    task_layout = QFormLayout()
+    task_layout.addRow('Название:', self.task_title)
+    task_layout.addRow('Описание:', self.task_description)
+    task_layout.addRow('Группа:', self.task_group)
+    task_layout.addRow('Дата:', self.task_date)
+    task_layout.addRow('', self.task_reminder)
+    task_layout.addRow(self.task_save_button, self.task_delete_button)
+    main_layout.addLayout(task_layout)
+
+    calendar_layout = QVBoxLayout()
+    calendar_layout.addWidget(self.calendar)
+    calendar_layout.addWidget(self.task_filter)
+    calendar_layout.addWidget(self.task_list_by_date)
+    main_layout.addLayout(calendar_layout)
+
+    group_layout = QVBoxLayout()
+    group_layout.addWidget(self.group_list)
+    group_layout.addWidget(self.group_add_button)
+    group_layout.addWidget(self.group_delete_button)
+    main_layout.addLayout(group_layout)
+
+    self.main_widget.setLayout(main_layout)
+
+    self.setWindowTitle('Ежедневник')
+    self.setGeometry(100, 100, 800, 600)
+    self.show()
+
+def load_tasks(self):
+    try:
+        with open(self.tasks_file_path, 'r') as f:
+            self.tasks = [Task.from_dict(task_dict) for task_dict in json.load(f)]
+    except FileNotFoundError:
+        pass
+
+def save_tasks(self):
+    with open(self.tasks_file_path, 'w') as f:
+        tasks_dict = [task.to_dict() for task in self.tasks]
+        json.dump(tasks_dict, f)
+
+def load_task_groups(self):
+    try:
+        with open(self.task_groups_file_path, 'r') as f:
+            self.task_groups = json.load(f)
+    except FileNotFoundError:
+        pass
+
+def save_task_groups(self):
+    with open(self.task_groups_file_path, 'w') as f:
+        json.dump(self.task_groups, f)
+
+def update_task_list(self):
+    self.task_list.clear()
+    for task in self.tasks:
+        item = QListWidgetItem(task.title)
+        self.task_list.addItem(item)
+
+def task_selection_changed(self):
+    if self.task_list.selectedItems():
+        task = self.tasks[self.task_list.currentRow()]
+        self.current_task = task
+        self.task_title.setText(task.title)
+        self.task_description.setText(task.description)
+        self.task_date.setDate(QDate.fromString(task.date, 'yyyy-MM-dd'))
+        self.task_reminder.setChecked(task.reminder)
+        if task.group:
+            group_index = self.task_group.findText(task.group)
+            self.task_group.setCurrentIndex(group_index)
+
+def save_task(self):
+    title = self.task_title.text()
+    description = self.task_description.toPlainText()
+    date = self.task_date.date().toString('yyyy-MM-dd')
+    group = self.task_group.currentText()
+    reminder = self.task_reminder.isChecked()
+
+    if not self.current_task:
+        self.current_task = Task(title, description, date, group, reminder)
+        self.tasks.append(self.current_task)
+        self.update_task_list()
+    else:
+        self.current_task.title = title
+        self.current_task.description = description
+        self.current_task.date = date
+        self.current_task.group = group
+        self.current_task.reminder = reminder
+
+    self.save_tasks()
+
+def delete_task(self):
+    if self.current_task:
+        self.tasks.remove(self.current_task)
+        self.update_task_list()
+        self.current_task = None
+
+    self.task_title.setText('')
+    self.task_description.setText('')
+    self.task_date.setDate(QDate.currentDate())
+    self.task_reminder.setChecked(False)
+
+    self.save_tasks()
+
+def reminder_checkbox_changed(self):
+    if self.task_reminder.isChecked():
+        message_box = QMessageBox()
+        message_box.setText('Установить напоминание?')
+        message_box.setInformativeText('Введите время напоминания')
+        message_box.setWindowTitle('Напоминание')
+        message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        time_edit = QTimeEdit()
+        message_box.layout().addWidget(time_edit, 1, 1)
+        ret = message_box.exec_()
+        if ret == QMessageBox.Ok:
+            time = time_edit.time().toString('hh:mm')
+            self.current_task.reminder_time = time
+        else:
+            self.task_reminder.setChecked(False)
+    else:
+        self.current_task.reminder_time = None
+
+    self.save_tasks()
+
+def update_calendar(self):
+    self.calendar.clear()
+    for task in self.tasks:
+        date = QDate.fromString(task.date, 'yyyy-MM-dd')
+        item = QTreeWidgetItem([date.toString('dd.MM.yyyy'), task.title])
+        self.calendar.addTopLevelItem(item)
+
+def update_task_list_by_date(self):
+    self.task_list_by_date.clear()
+    date = self.task_filter.date().toString('yyyy-MM-dd')
+    for task in self.tasks:
+        if task.date == date:
+            item = QListWidgetItem(task.title)
+            self.task_list_by_date.addItem(item)
+
+def update_group_list(self):
+    self.group_list.clear()
+    for group in self.task_groups:
+        item = QListWidgetItem(group)
+        self.group_list.addItem(item)
+
+def add_group(self):
+    group_name, ok = QInputDialog.getText(self, 'Добавить группу', 'Введите название группы:')
+    if ok:
+        self.task_groups.append(group_name)
+        self.update_group_list()
+        self.save_task_groups()
+
+def delete_group(self):
+    current_group = self.group_list.currentItem()
+    if current_group:
+        group_name = current_group.text()
+        for task in self.tasks:
+            if task.group == group_name:
+                task.group = None
+        self.task_groups.remove(group_name)
+        self.update_group_list()
+        self.update_task_list()
+        self.save_task_groups()
+        self.save_tasks()
+if name == 'main':
+    app = QApplication(sys.argv)
+ex = DailyPlanner()
+sys.exit(app.exec_())
